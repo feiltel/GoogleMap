@@ -1,8 +1,13 @@
 package com.nutstudio.mymap;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.location.Location;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -11,9 +16,7 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.nutstudio.mymap.bean.MapUtils;
 
 import org.json.JSONObject;
 
@@ -33,6 +36,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+
     }
 
 
@@ -48,29 +53,48 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        Polyline polyline1 = googleMap.addPolyline(new PolylineOptions()
-                .clickable(true)
-                .add(
-                        new LatLng(-35.016, 143.321),
-                        new LatLng(-34.747, 145.592),
-                        new LatLng(-34.364, 147.891),
-                        new LatLng(-33.501, 150.217),
-                        new LatLng(-32.306, 149.248),
-                        new LatLng(-32.491, 147.309)));
 
-        // Add a marker in Sydney and move the camera
+        /**
+         * 设置地图初始位置
+         */
         LatLng sydney = new LatLng(39.99709957757345, 116.31184045225382);
+        //也可以不加这句 ,这句是给初始位置加 marker
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
 
-        String url = "https://maps.googleapis.com/maps/api/directions/json?origin=Disneyland&destination=Universal+Studios+Hollywood4&key=AIzaSyBurssY5xBTcXF8xeaJv3wVKt1MKT6-2XQ";
-
+        //获取线路数据
         String mapurl = getDirectionsUrl(new LatLng(39.99709957757345, 116.31184045225382), new LatLng(39.949158391497214, 116.4154639095068));
         getMapLine(mapurl);
+
+
+        /**
+         * 定位相关
+         */
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            //开启定位
+            mMap.setMyLocationEnabled(true);
+        } else {
+            // Show rationale and request permission.
+        }
+
+        mMap.setOnMyLocationButtonClickListener(new GoogleMap.OnMyLocationButtonClickListener() {
+            @Override
+            public boolean onMyLocationButtonClick() {
+                return false;
+            }
+        });
+        mMap.setOnMyLocationClickListener(new GoogleMap.OnMyLocationClickListener() {
+            @Override
+            public void onMyLocationClick(@NonNull Location location) {
+
+            }
+        });
     }
 
     private void getMapLine(String url) {
         Log.d("url", url);
+        //这里可以换成你们使用的网络请求
         OkHttpManager.getAsyn(url, new OkHttpManager.ResultCallback() {
             @Override
             public void onError(Exception e) {
@@ -79,6 +103,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             @Override
             public void onResponse(String string) {
+                //成功处理
                 success(string);
             }
         });
@@ -87,11 +112,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private void success(String json) {
         String s1 = json;
         JSONObject jObject;
-        //  MapBean mapBean = new Gson().fromJson(json, MapBean.class);
         List<List<HashMap<String, String>>> routes = null;
         try {
             jObject = new JSONObject(s1);
-            // Starts parsing data
             routes = MapUtils.parse(jObject);
             System.out.println("do in background:" + routes);
         } catch (Exception e) {

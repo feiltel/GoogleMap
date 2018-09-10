@@ -1,4 +1,4 @@
-package com.nutstudio.mymap.bean;
+package com.nutstudio.mymap;
 
 import com.google.android.gms.maps.model.LatLng;
 
